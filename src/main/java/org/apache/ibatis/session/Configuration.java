@@ -565,19 +565,27 @@ public class Configuration {
   }
 
   public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
+    // 大概就是默认Simple
     executorType = executorType == null ? defaultExecutorType : executorType;
     executorType = executorType == null ? ExecutorType.SIMPLE : executorType;
     Executor executor;
+    // 有指定类型
     if (ExecutorType.BATCH == executorType) {
+      // 批
       executor = new BatchExecutor(this, transaction);
     } else if (ExecutorType.REUSE == executorType) {
+      // 复用
       executor = new ReuseExecutor(this, transaction);
     } else {
       executor = new SimpleExecutor(this, transaction);
     }
+    // m默认开启缓存
     if (cacheEnabled) {
+      // 等于这个执行前置就加入缓存的
       executor = new CachingExecutor(executor);
     }
+
+    // 封装拦截器连到执行器上
     executor = (Executor) interceptorChain.pluginAll(executor);
     return executor;
   }
@@ -733,6 +741,7 @@ public class Configuration {
     mapperRegistry.addMappers(packageName, superType);
   }
 
+  // 扫描当前package下的类作为mapper，加入到mapperRegistry（mapper创建函数的容器）
   public void addMappers(String packageName) {
     mapperRegistry.addMappers(packageName);
   }
@@ -742,6 +751,7 @@ public class Configuration {
   }
 
   public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
+    // 在mapperRegistry找到对应class的工厂，并触发创建，得到对应的mapperProxy对象
     return mapperRegistry.getMapper(type, sqlSession);
   }
 

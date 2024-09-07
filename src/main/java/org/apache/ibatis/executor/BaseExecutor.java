@@ -113,6 +113,7 @@ public abstract class BaseExecutor implements Executor {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+    // 强制清理本地所有缓存
     clearLocalCache();
     return doUpdate(ms, parameter);
   }
@@ -132,7 +133,9 @@ public abstract class BaseExecutor implements Executor {
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
     BoundSql boundSql = ms.getBoundSql(parameter);
+    // 缓存key
     CacheKey key = createCacheKey(ms, parameter, rowBounds, boundSql);
+    // 执行查询sql
     return query(ms, parameter, rowBounds, resultHandler, key, boundSql);
  }
 
@@ -149,10 +152,13 @@ public abstract class BaseExecutor implements Executor {
     List<E> list;
     try {
       queryStack++;
+      // 查询缓存,一般使用不传，所以默认是会走缓存的
+      // 如果EXECUTION_PLACEHOLDER，应该会异常
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
+        // 走db查询
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
     } finally {
@@ -319,12 +325,19 @@ public abstract class BaseExecutor implements Executor {
 
   private <E> List<E> queryFromDatabase(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
     List<E> list;
+    // 执行前先往缓存放EXECUTION_PLACEHOLDER入
+    // 一般Executor都不会共享的（一个给单线程使用，不会有线程安全情况），所以这里有点意义不明（可能为了多线程问题？）
     localCache.putObject(key, EXECUTION_PLACEHOLDER);
     try {
+      // 真正执行jdbc查询！！！
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
     } finally {
+      // 移除本地缓存（主要为了移除EXECUTION_PLACEHOLDER）
+      // 就是EXECUTION_PLACEHOLDER一套的，所以未知意义，先不理
+      // 不是重点，可忽略
       localCache.removeObject(key);
     }
+    // 放入缓存！！！
     localCache.putObject(key, list);
     if (ms.getStatementType() == StatementType.CALLABLE) {
       localOutputParameterCache.putObject(key, parameter);

@@ -35,9 +35,11 @@ import org.apache.ibatis.transaction.Transaction;
 
 /**
  * @author Clinton Begin
+ * 这个这些就是缓存jdbc Statement对象
  */
 public class ReuseExecutor extends BaseExecutor {
 
+  // Statement 缓存
   private final Map<String, Statement> statementMap = new HashMap<String, Statement>();
 
   public ReuseExecutor(Configuration configuration, Transaction transaction) {
@@ -73,6 +75,7 @@ public class ReuseExecutor extends BaseExecutor {
     for (Statement stmt : statementMap.values()) {
       closeStatement(stmt);
     }
+    // 清空statement缓存
     statementMap.clear();
     return Collections.emptyList();
   }
@@ -81,10 +84,13 @@ public class ReuseExecutor extends BaseExecutor {
     Statement stmt;
     BoundSql boundSql = handler.getBoundSql();
     String sql = boundSql.getSql();
+    // 所谓的reuse
     if (hasStatementFor(sql)) {
+      // 就是复用statement对象，用个map存着
       stmt = getStatement(sql);
       applyTransactionTimeout(stmt);
     } else {
+      // 未有这个缓存，新建放入
       Connection connection = getConnection(statementLog);
       stmt = handler.prepare(connection, transaction.getTimeout());
       putStatement(sql, stmt);

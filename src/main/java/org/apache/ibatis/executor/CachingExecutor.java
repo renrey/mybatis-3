@@ -79,6 +79,7 @@ public class CachingExecutor implements Executor {
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
     BoundSql boundSql = ms.getBoundSql(parameterObject);
+    // 就是同一个方法的同一种参数多次调用的缓存，所以需要sql、statement、参数对象等作为id
     CacheKey key = createCacheKey(ms, parameterObject, rowBounds, boundSql);
     return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
@@ -93,14 +94,17 @@ public class CachingExecutor implements Executor {
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql)
       throws SQLException {
     Cache cache = ms.getCache();
+    // 等于开启外层缓存
     if (cache != null) {
-      flushCacheIfRequired(ms);
+      flushCacheIfRequired(ms);// 清除缓存，但一般select不用清除缓存
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
         if (list == null) {
           list = delegate.<E> query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+          // 这个缓存会有并发问题（普通hashmap），但好像问题不大？，就是没超时
+          // 单点问题：本地只能当前进程进行修改才会失效，分布式不建议使用
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
         return list;

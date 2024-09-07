@@ -91,8 +91,13 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     Transaction tx = null;
     try {
       final Environment environment = configuration.getEnvironment();
+
+      //
       final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
+      // 代表事务的对象，就是把链接存在那个对象里
+      // 从Environment获取jdbc的DataSource！！！-》这个是jdbc 数据源连接池，用来获取jdbc连接的
       tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+      // 给这个事务创建Executor
       final Executor executor = configuration.newExecutor(tx, execType);
       return new DefaultSqlSession(configuration, executor, autoCommit);
     } catch (Exception e) {

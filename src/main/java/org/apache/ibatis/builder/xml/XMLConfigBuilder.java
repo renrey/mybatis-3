@@ -91,11 +91,16 @@ public class XMLConfigBuilder extends BaseBuilder {
     this.parser = parser;
   }
 
+  // 转换，把xml解析成Configuration对象
   public Configuration parse() {
     if (parsed) {
       throw new BuilderException("Each XMLConfigBuilder can only be used once.");
     }
     parsed = true;
+    // 解析xml内容
+    /**
+     * 扫描mapper类，创对应MapperProxyFactory（mapper代理创建工厂-创建函数），放入到mapperRegistry
+     */
     parseConfiguration(parser.evalNode("/configuration"));
     return configuration;
   }
@@ -116,6 +121,11 @@ public class XMLConfigBuilder extends BaseBuilder {
       environmentsElement(root.evalNode("environments"));
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
       typeHandlerElement(root.evalNode("typeHandlers"));
+
+      // 解析mappers标签下的元素
+      /**
+       * 这里会扫描mapper类，并创建对应MapperProxyFactory（mapper代理创建工厂-创建函数），放入到mapperRegistry
+       */
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -359,8 +369,11 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void mapperElement(XNode parent) throws Exception {
     if (parent != null) {
       for (XNode child : parent.getChildren()) {
+        // package标签
         if ("package".equals(child.getName())) {
+          // name代表了作为mapper所在的package
           String mapperPackage = child.getStringAttribute("name");
+          // 扫描package下的所有类，每个类作为mapper，加入到mapperRegistry（mapper创建函数的容器）
           configuration.addMappers(mapperPackage);
         } else {
           String resource = child.getStringAttribute("resource");

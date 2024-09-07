@@ -389,22 +389,29 @@ public class PooledDataSource implements DataSource {
     long t = System.currentTimeMillis();
     int localBadConnectionCount = 0;
 
+    // 代表会一直循环拿
     while (conn == null) {
+      // 锁，获取独占资源
       synchronized (state) {
+        // 有空闲连接
         if (!state.idleConnections.isEmpty()) {
+          // pop出获取返回
           // Pool has available connection
           conn = state.idleConnections.remove(0);
           if (log.isDebugEnabled()) {
             log.debug("Checked out connection " + conn.getRealHashCode() + " from pool.");
           }
+        // 没有空闲可复用的
         } else {
           // Pool does not have available connection
+          // 判断是否超出上限，没有则创建新连接
           if (state.activeConnections.size() < poolMaximumActiveConnections) {
             // Can create new connection
             conn = new PooledConnection(dataSource.getConnection(), this);
             if (log.isDebugEnabled()) {
               log.debug("Created connection " + conn.getRealHashCode() + ".");
             }
+          // 超过上限，无法创建新连接
           } else {
             // Cannot create new connection
             PooledConnection oldestActiveConnection = state.activeConnections.get(0);

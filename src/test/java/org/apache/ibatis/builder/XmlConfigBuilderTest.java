@@ -152,6 +152,7 @@ public class XmlConfigBuilderTest {
 
     XMLConfigBuilder builder = new XMLConfigBuilder(new StringReader(MAPPER_CONFIG));
     builder.parse();
+    builder.getConfiguration();
 
     TypeHandlerRegistry typeHandlerRegistry = builder.getConfiguration().getTypeHandlerRegistry();
     TypeHandler<MyEnum> typeHandler = typeHandlerRegistry.getTypeHandler(MyEnum.class);

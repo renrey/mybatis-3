@@ -289,7 +289,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .resultSets(resultSets)
         .resultMaps(getStatementResultMaps(resultMap, resultType, id))
         .resultSetType(resultSetType)
-        .flushCacheRequired(valueOrDefault(flushCache, !isSelect))
+        .flushCacheRequired(valueOrDefault(flushCache, !isSelect))//默认更新操作才会每次都刷新缓存
         .useCache(valueOrDefault(useCache, isSelect))
         .cache(currentCache);
 

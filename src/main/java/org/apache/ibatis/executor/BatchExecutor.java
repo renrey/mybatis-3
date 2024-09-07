@@ -58,6 +58,7 @@ public class BatchExecutor extends BaseExecutor {
     final BoundSql boundSql = handler.getBoundSql();
     final String sql = boundSql.getSql();
     final Statement stmt;
+    // 最近一次提交的
     if (sql.equals(currentSql) && ms.equals(currentStatement)) {
       int last = statementList.size() - 1;
       stmt = statementList.get(last);
@@ -66,16 +67,27 @@ public class BatchExecutor extends BaseExecutor {
       BatchResult batchResult = batchResultList.get(last);
       batchResult.addParameterObject(parameterObject);
     } else {
+      // （从事务对象，早就从连接池拿到jdbc连接了）获取jdbc连接
       Connection connection = getConnection(ms.getStatementLog());
       stmt = handler.prepare(connection, transaction.getTimeout());
       handler.parameterize(stmt);    //fix Issues 322
+      // 这2个更新成这次的
       currentSql = sql;
       currentStatement = ms;
+      // 加入statementList
       statementList.add(stmt);
+      // 给这次生成BatchResult对象，加入到batchResultList
       batchResultList.add(new BatchResult(ms, sql, parameterObject));
     }
   // handler.parameterize(stmt);
+
+    // 把jdbc statement加入batch
+    /**、
+     * 需要执行executeBatch
+     * @see org.apache.ibatis.executor.BatchExecutor#doFlushStatements(boolean)
+     */
     handler.batch(stmt);
+    // 返回是固定值
     return BATCH_UPDATE_RETURN_VALUE;
   }
 
@@ -84,12 +96,14 @@ public class BatchExecutor extends BaseExecutor {
       throws SQLException {
     Statement stmt = null;
     try {
+      // 在这里是执行batch的语句
       flushStatements();
       Configuration configuration = ms.getConfiguration();
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameterObject, rowBounds, resultHandler, boundSql);
       Connection connection = getConnection(ms.getStatementLog());
       stmt = handler.prepare(connection, transaction.getTimeout());
       handler.parameterize(stmt);
+      // 执行查询
       return handler.<E>query(stmt, resultHandler);
     } finally {
       closeStatement(stmt);
@@ -119,6 +133,9 @@ public class BatchExecutor extends BaseExecutor {
         applyTransactionTimeout(stmt);
         BatchResult batchResult = batchResultList.get(i);
         try {
+          /**
+           * 执行batch中sql，批量执行sql
+           */
           batchResult.setUpdateCounts(stmt.executeBatch());
           MappedStatement ms = batchResult.getMappedStatement();
           List<Object> parameterObjects = batchResult.getParameterObjects();

@@ -144,7 +144,9 @@ public class DefaultSqlSession implements SqlSession {
   @Override
   public <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds) {
     try {
+      // 1.找到MappedStatement
       MappedStatement ms = configuration.getMappedStatement(statement);
+      // 2. 交给executor的query
       return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);
@@ -182,6 +184,7 @@ public class DefaultSqlSession implements SqlSession {
 
   @Override
   public int insert(String statement, Object parameter) {
+    // insert还是调用update
     return update(statement, parameter);
   }
 
@@ -194,7 +197,11 @@ public class DefaultSqlSession implements SqlSession {
   public int update(String statement, Object parameter) {
     try {
       dirty = true;
+      // 1. 找到MappedStatement
       MappedStatement ms = configuration.getMappedStatement(statement);
+      /**
+       * 2. 交给executor，去update
+       */
       return executor.update(ms, wrapCollection(parameter));
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error updating database.  Cause: " + e, e);
@@ -210,6 +217,7 @@ public class DefaultSqlSession implements SqlSession {
 
   @Override
   public int delete(String statement, Object parameter) {
+    // 也是更新
     return update(statement, parameter);
   }
 

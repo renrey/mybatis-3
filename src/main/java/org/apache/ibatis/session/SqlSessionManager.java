@@ -344,17 +344,21 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      // 复用当前线程session
       final SqlSession sqlSession = SqlSessionManager.this.localSqlSession.get();
       if (sqlSession != null) {
         try {
+          // 复用却不用提交事务？
           return method.invoke(sqlSession, args);
         } catch (Throwable t) {
           throw ExceptionUtil.unwrapThrowable(t);
         }
       } else {
+        // 没有则新建
         final SqlSession autoSqlSession = openSession();
         try {
           final Object result = method.invoke(autoSqlSession, args);
+          // 这里会提交事务
           autoSqlSession.commit();
           return result;
         } catch (Throwable t) {

@@ -42,6 +42,8 @@ public interface Executor {
 
   <E> Cursor<E> queryCursor(MappedStatement ms, Object parameter, RowBounds rowBounds) throws SQLException;
 
+  // 清空当前目标缓存复用的东西
+  // 但看返回值类型，就知道本意是为了batch执行
   List<BatchResult> flushStatements() throws SQLException;
 
   void commit(boolean required) throws SQLException;

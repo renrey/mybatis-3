@@ -55,6 +55,7 @@ public class SimpleStatementHandler extends BaseStatementHandler {
       rows = statement.getUpdateCount();
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
     } else {
+      // jdbc执行
       statement.execute(sql);
       rows = statement.getUpdateCount();
     }
@@ -64,13 +65,21 @@ public class SimpleStatementHandler extends BaseStatementHandler {
   @Override
   public void batch(Statement statement) throws SQLException {
     String sql = boundSql.getSql();
+
+    // 加入的jdbc statement的batch，后面需要执行executeBatch真正执行sql
+    /**
+     *
+     * @see org.apache.ibatis.executor.BatchExecutor#doFlushStatements(boolean)
+     */
     statement.addBatch(sql);
   }
 
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
     String sql = boundSql.getSql();
+    // 1. jdbc执行
     statement.execute(sql);
+    // 2. 解析结果，转出list
     return resultSetHandler.<E>handleResultSets(statement);
   }
 

@@ -53,16 +53,19 @@ public class MapperMethod {
   public Object execute(SqlSession sqlSession, Object[] args) {
     Object result;
     switch (command.getType()) {
+      // 插入，实际跟更新一样
       case INSERT: {
       Object param = method.convertArgsToSqlCommandParam(args);
         result = rowCountResult(sqlSession.insert(command.getName(), param));
         break;
       }
+      //更新
       case UPDATE: {
         Object param = method.convertArgsToSqlCommandParam(args);
         result = rowCountResult(sqlSession.update(command.getName(), param));
         break;
       }
+      // 删除，实际跟更新一样
       case DELETE: {
         Object param = method.convertArgsToSqlCommandParam(args);
         result = rowCountResult(sqlSession.delete(command.getName(), param));
@@ -73,6 +76,7 @@ public class MapperMethod {
           executeWithResultHandler(sqlSession, args);
           result = null;
         } else if (method.returnsMany()) {
+          // 当方法定义返回值类型为集合类or数组时：sqlSession.executeForMany
           result = executeForMany(sqlSession, args);
         } else if (method.returnsMap()) {
           result = executeForMap(sqlSession, args);
@@ -80,6 +84,7 @@ public class MapperMethod {
           result = executeForCursor(sqlSession, args);
         } else {
           Object param = method.convertArgsToSqlCommandParam(args);
+          // 当方法定义返回值类型为为普通class：调用sqlSession.selectOne
           result = sqlSession.selectOne(command.getName(), param);
         }
         break;
@@ -136,6 +141,7 @@ public class MapperMethod {
       RowBounds rowBounds = method.extractRowBounds(args);
       result = sqlSession.<E>selectList(command.getName(), param, rowBounds);
     } else {
+      // selectList
       result = sqlSession.<E>selectList(command.getName(), param);
     }
     // issue #510 Collections & arrays support
@@ -216,6 +222,7 @@ public class MapperMethod {
     public SqlCommand(Configuration configuration, Class<?> mapperInterface, Method method) {
       final String methodName = method.getName();
       final Class<?> declaringClass = method.getDeclaringClass();
+      // 找到对应方法的MappedStatement
       MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, declaringClass,
           configuration);
       if (ms == null) {

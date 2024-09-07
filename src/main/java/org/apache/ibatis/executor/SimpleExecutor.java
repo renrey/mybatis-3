@@ -45,6 +45,9 @@ public class SimpleExecutor extends BaseExecutor {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      /**
+       * 生成jdbc的Statement对象
+       */
       StatementHandler handler = configuration.newStatementHandler(this, ms, parameter, RowBounds.DEFAULT, null, null);
       stmt = prepareStatement(handler, ms.getStatementLog());
       return handler.update(stmt);
@@ -58,10 +61,15 @@ public class SimpleExecutor extends BaseExecutor {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      // 生成解析结果的处理对象
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+      // 创建jdbc的Statement
       stmt = prepareStatement(handler, ms.getStatementLog());
+
+      // 执行sql查询，并解析结果转出list！！！
       return handler.<E>query(stmt, resultHandler);
     } finally {
+      // 关闭Statement
       closeStatement(stmt);
     }
   }
@@ -76,6 +84,7 @@ public class SimpleExecutor extends BaseExecutor {
 
   @Override
   public List<BatchResult> doFlushStatements(boolean isRollback) throws SQLException {
+    // 无
     return Collections.emptyList();
   }
 

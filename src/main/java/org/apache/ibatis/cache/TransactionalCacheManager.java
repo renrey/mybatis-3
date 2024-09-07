@@ -36,6 +36,7 @@ public class TransactionalCacheManager {
   }
   
   public void putObject(Cache cache, CacheKey key, Object value) {
+    // 就是放入hashmap中
     getTransactionalCache(cache).putObject(key, value);
   }
 
